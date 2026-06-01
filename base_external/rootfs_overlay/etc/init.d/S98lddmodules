@@ -1,0 +1,85 @@
+#!/bin/sh
+
+# Device node configuration variables (from scull_load/module_load references)
+mode="664"
+group="staff"
+
+# Helper function to create device nodes safely
+create_nodes() {
+    local driver_name=$1
+    local device_prefix=$2
+    local max_range=$3
+
+    # Extract major number from /proc/devices
+    local major=$(awk "\$2==\"$driver_name\" {print \$1}" /proc/devices)
+    
+    if [ -n "$major" ]; then
+        # If max_range is empty or 0, create a single node (like /dev/faulty)
+        if [ -z "$max_range" ] || [ "$max_range" -eq 0 ]; then
+            rm -f /dev/${device_prefix}
+            mknod /dev/${device_prefix} c $major 0
+            chgrp $group /dev/${device_prefix}
+            chmod $mode /dev/${device_prefix}
+        else
+            # Create multiple sequenced nodes (like /dev/scull0 to /dev/scull3)
+            local i=0
+            while [ $i -le $max_range ]; do
+                rm -f /dev/${device_prefix}$i
+                mknod /dev/${device_prefix}$i c $major $i
+                chgrp $group /dev/${device_prefix}$i
+                chmod $mode /dev/${device_prefix}$i
+                i=$((i + 1))
+            done
+        fi
+    else
+        echo "Warning: Driver '$driver_name' loaded, but no major number found in /proc/devices."
+    fi
+}
+
+case "$1" in
+  start)
+    echo "Starting LDD modules..."
+    
+    # Ensure standard group exists if missing in basic rootfs environments
+    grep -q "^$group:" /etc/group || addgroup "$group"
+
+    # i. Load the scull driver & create nodes (scull0 to scull3)
+    modprobe scull mode=$mode group=$group || insmod /lib/modules/$(uname -r)/extra/scull.ko mode=$mode group=$group
+    create_nodes "scull" "scull" 3
+
+    # ii. Load the faulty driver & create node
+    modprobe faulty || insmod /lib/modules/$(uname -r)/extra/faulty.ko
+    create_nodes "faulty" "faulty" 0
+
+    # iii. Run modprobe on the hello module to load on startup
+    depmod -a
+    modprobe hello
+    ;;
+    
+  stop)
+    echo "Stopping LDD modules..."
+    
+    # iii. Use rmmod to remove hello on shutdown
+    rmmod hello 2>/dev/null
+
+    # ii. Perform operations on shutdown to unload faulty driver
+    rmmod faulty 2>/dev/null
+    rm -f /dev/faulty
+
+    # i. Perform operations on shutdown to unload scull driver
+    rmmod scull 2>/dev/null
+    rm -f /dev/scull[0-3]
+    ;;
+    
+  restart|reload)
+    $0 stop
+    $0 start
+    ;;
+    
+  *)
+    echo "Usage: $0 {start|stop|restart}"
+    exit 1
+    ;;
+esac
+
+exit 0
