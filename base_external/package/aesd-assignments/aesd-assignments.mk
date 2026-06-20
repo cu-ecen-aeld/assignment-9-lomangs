@@ -10,8 +10,10 @@ AESD_ASSIGNMENTS_VERSION = 'HEAD'
 # Note: Be sure to reference the *ssh* repository URL here (not https) to work properly
 # with ssh keys and the automated build/test system.
 # Your site should start with git@github.com:
-#AESD_ASSIGNMENTS_VERSION = 0d215d1914ad5633e14e70e017cdfdbe69e00670
-AESD_ASSIGNMENTS_VERSION = f8e060d321e927207e0904f14ca29b0f8b9f2c75
+#AESD_ASSIGNMENTS_VERSION = f8e060d321e927207e0904f14ca29b0f8b9f2c75
+#AESD_ASSIGNMENTS_VERSION = 571683cb2c4de50df7be8e4805670f6e709ae5cb
+#AESD_ASSIGNMENTS_VERSION = debcc194c7d0b9937ad4e5555d7719c225dd5a7e
+AESD_ASSIGNMENTS_VERSION = 6289a8cbe8b87a6f4fa6b38141f5d6fbf60956cc
 AESD_ASSIGNMENTS_SITE = git@github.com:cu-ecen-aeld/assignments-3-and-later-lomangs.git
 AESD_ASSIGNMENTS_SITE_METHOD = git
 AESD_ASSIGNMENTS_GIT_SUBMODULES = YES
